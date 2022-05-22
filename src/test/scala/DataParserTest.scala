@@ -22,16 +22,13 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
         ("21",	3,	"cg",	"ir",	"2019-02-01")
     ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
-    sourceDf.show()
-
     val resDf = getGroupByMonth(sourceDf)
-    resDf.show()
 
     val expectedDf = Seq(
       (1, 2),
       (2,2)
     ).toDF("Month", "Number of flights")
-    expectedDf.show()
+
     assert(assertData(resDf, expectedDf))
   }
 
@@ -48,18 +45,15 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
       ("22",	3,	"cg",	"ir",	"2019-02-01")
     ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
-    sourceDf.show()
-
     val resDf = top100FrequentFlyers(sourceDf)
-    resDf.show()
+
     val expectedDf = Seq(
       ("48", 3),
       ("82", 2)
     ).toDF("passengerId", "Number of flights")
-    expectedDf.show()
+
     assert(assertData(resDf, expectedDf))
   }
-
 
   test("Passengers flown together with argument Test"){
     val sourceDf = Seq(
@@ -70,7 +64,6 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
       ("212", "252",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31")
     ).toDF("passengerId","passengerId","flightsTogether","from","to"," from_date","to_date")
 
-    sourceDf.show()
     val from = LocalDate.parse(
       "2017-01-01",
       DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -80,19 +73,15 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
       DateTimeFormatter.ofPattern("yyyy-MM-dd")
     )
     val resDf = flownTogether(sourceDf, 2, from, to)
-    resDf.show()
-    resDf.printSchema()
 
     val expectedDf = Seq(
       ("218", "272",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31"),
       ("212", "252",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31")
     ).toDF("passengerId","passengerId","flightsTogether","from","to"," from_date","to_date")
 
-    expectedDf.show()
-    expectedDf.printSchema()
     assert(assertData(resDf, expectedDf))
   }
-//
+
  test("Passengers through all the countries Test"){
    val sourceDf = Seq(
      ("48",	0,	"cg",	"ir",	"2019-01-01"),
@@ -103,39 +92,31 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
      ("94",	6,	"ir",	"ck",	"2019-01-06")
    ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
-   sourceDf.show()
-
    val resDf = passengersLongestRun(sourceDf)
-   resDf.show(false)
-   resDf.printSchema()
 
    val expectedDF = Seq(
      ("48", Array("cg", "ir", "uk", "ir", "uk", "cr"), 3, Array("ir", "uk", "cr"), 2),
      ("21", Array("cg", "ir"), 1, Array("ir"), 1),
      ("94", Array("cg", "ir", "ir", "ck"), 2, Array("ir", "ck"), 2)
    ).toDF("passengerId", "countries", "longest_run", "uniqueCountries", "longestrunwithoutUK")
-   expectedDF.show(false)
-   expectedDF.printSchema()
+
    assert(assertData(resDf, expectedDF))
  }
-//
- test("Passengers flown together Test"){}
-  val sourceDf = Seq(
-    ("48",	0,	"cg",	"ir",	"2019-01-01"),
-    ("94",	1,	"cg",	"im",	"2019-02-01"),
-    ("82",	0,	"cg",	"ir",	"2019-01-01"),
-    ("21",	3,	"cg",	"kr",	"2019-03-01")
-  ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
-  println("5 th test")
-  sourceDf.show()
+ test("Passengers flown together Test") {
+   val sourceDf = Seq(
+     ("48", 0, "cg", "ir", "2019-01-01"),
+     ("94", 1, "cg", "im", "2019-02-01"),
+     ("82", 0, "cg", "ir", "2019-01-01"),
+     ("21", 3, "cg", "kr", "2019-03-01")
+   ).toDF("passengerId", "flightId", "from", "to", "date")
 
-  val resDf = getPassengersTogether(sourceDf)
-  resDf.show()
+   val resDf = getPassengersTogether(sourceDf)
 
-  val expectedDF = Seq(
-    ("48", "82", 1, "2019-01-01", "2019-01-01")
-  ).toDF("passengersId", "passengersId", "flightsTogether", "from", "to")
+   val expectedDF = Seq(
+     ("48", "82", 1, "2019-01-01", "2019-01-01")
+   ).toDF("passengersId", "passengersId", "flightsTogether", "from", "to")
 
-  assert(assertData(resDf, expectedDF))
+   assert(assertData(resDf, expectedDF))
+ }
 }
