@@ -23,8 +23,6 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
     ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
     sourceDf.show()
-    // create a Spark session
-    val spark = SparkSession.builder.appName("CSV Data Processor").getOrCreate()
 
     val resDf = getGroupByMonth(sourceDf)
     resDf.show()
@@ -37,29 +35,107 @@ class DataParserTest extends AnyFunSuite with SparkSessionTestWrapper with DataF
     assert(assertData(resDf, expectedDf))
   }
 
-//  test("100 most DataFrame Data Test") {
-//    val sourceDf = Seq(
-//      ("Jackie", "Ax", "19861126-29967"),
-//      ("Vanessa", "Campball", "19881021-86591"),
-//      ("Willetta", "Reneta", "19991125-38555")
-//    ).toDF("name", "surname", "identification_number")
+  test("100 most DataFrame Data Test") {
+    // testing purpose limit would be for 2 out of 8 records
+    val sourceDf = Seq(
+      ("48",	0,	"cg",	"ir",	"2019-01-01"),
+      ("94",	1,	"cg",	"ir",	"2019-01-01"),
+      ("82",	0,	"cg",	"ir",	"2019-02-01"),
+      ("21",	3,	"cg",	"ir",	"2019-02-01"),
+      ("48",	3,	"cg",	"ir",	"2019-01-01"),
+      ("48",	1,	"cg",	"ir",	"2019-01-01"),
+      ("82",	1,	"cg",	"ir",	"2019-02-01"),
+      ("22",	3,	"cg",	"ir",	"2019-02-01")
+    ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
+
+    sourceDf.show()
+
+    val resDf = top100FrequentFlyers(sourceDf)
+    resDf.show()
+    val expectedDf = Seq(
+      ("48", 3),
+      ("82", 2)
+    ).toDF("passengerId", "Number of flights")
+    expectedDf.show()
+    assert(assertData(resDf, expectedDf))
+  }
+
+
+  test("Passengers flown together with argument Test"){
+    val sourceDf = Seq(
+      ("218", "272",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31"),
+      ("123", "272",1, "2017-01-01","2017-02-31","2017-01-01", "2017-02-31"),
+      ("216", "270",2, "2017-01-01","2017-03-31","2017-01-01", "2017-03-31"),
+      ("211", "262",9, "2017-01-01","2017-04-31","2017-01-01", "2017-04-31"),
+      ("212", "252",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31")
+    ).toDF("passengerId","passengerId","flightsTogether","from","to"," from_date","to_date")
+
+    sourceDf.show()
+    val from = LocalDate.parse(
+      "2017-01-01",
+      DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    )
+    val to = LocalDate.parse(
+      "2017-01-31",
+      DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    )
+    val resDf = flownTogether(sourceDf, 2, from, to)
+    resDf.show()
+    resDf.printSchema()
+
+    val expectedDf = Seq(
+      ("218", "272",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31"),
+      ("212", "252",4, "2017-01-01","2017-01-31","2017-01-01", "2017-01-31")
+    ).toDF("passengerId","passengerId","flightsTogether","from","to"," from_date","to_date")
+
+    expectedDf.show()
+    expectedDf.printSchema()
+    assert(assertData(resDf, expectedDf))
+  }
 //
-//    val resDf = getCSVDF(sourceDf)
+ test("Passengers through all the countries Test"){
+   val sourceDf = Seq(
+     ("48",	0,	"cg",	"ir",	"2019-01-01"),
+     ("94",	1,	"cg",	"ir",	"2019-01-02"),
+     ("48",	4,	"ir",	"uk",	"2019-02-03"),
+     ("21",	3,	"cg",	"ir",	"2019-02-04"),
+     ("48",	5,	"uk",	"cr",	"2019-02-08"),
+     ("94",	6,	"ir",	"ck",	"2019-01-06")
+   ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
+
+   sourceDf.show()
+
+   val resDf = passengersLongestRun(sourceDf)
+   resDf.show(false)
+   resDf.printSchema()
+
+   val expectedDF = Seq(
+     ("48", Array("cg", "ir", "uk", "ir", "uk", "cr"), 3, Array("ir", "uk", "cr"), 2),
+     ("21", Array("cg", "ir"), 1, Array("ir"), 1),
+     ("94", Array("cg", "ir", "ir", "ck"), 2, Array("ir", "ck"), 2)
+   ).toDF("passengerId", "countries", "longest_run", "uniqueCountries", "longestrunwithoutUK")
+   expectedDF.show(false)
+   expectedDF.printSchema()
+   assert(assertData(resDf, expectedDF))
+ }
 //
-//    val expectedDf = Seq(
-//      ("Jackie", "Ax", "19861126-29967", "19861126", "1986", "11", "26"),
-//      ("Vanessa", "Campball", "19881021-86591", "19881021", "1988", "10", "21"),
-//      ("Willetta", "Reneta", "19991125-38555", "19991125", "1999", "11", "25")
-//    ).toDF("name", "surname", "identification_number", "birth_date", "year", "month", "day")
-//
-//    assert(assertData(resDf, expectedDf))
-//  }
+ test("Passengers flown together Test"){}
+  val sourceDf = Seq(
+    ("48",	0,	"cg",	"ir",	"2019-01-01"),
+    ("94",	1,	"cg",	"im",	"2019-02-01"),
+    ("82",	0,	"cg",	"ir",	"2019-01-01"),
+    ("21",	3,	"cg",	"kr",	"2019-03-01")
+  ).toDF("passengerId",	"flightId",	"from",	"to",	"date")
 
+  println("5 th test")
+  sourceDf.show()
 
-//  test("Passengers flown together with argument Test"){}
+  val resDf = getPassengersTogether(sourceDf)
+  resDf.show()
 
-// test("Passengers through all the countries Test"){}
+  val expectedDF = Seq(
+    ("48", "82", 1, "2019-01-01", "2019-01-01")
+  ).toDF("passengersId", "passengersId", "flightsTogether", "from", "to")
 
-// test("Passengers flown together Test")
-
+  assert(assertData(resDf, expectedDF))
 }

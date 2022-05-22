@@ -60,7 +60,7 @@ object FlightsDataCalculation {
     val top100FrequentFlyersDF = df.groupBy("passengerId")
       .agg(countDistinct("flightId").as("Number of flights"))
       .orderBy(desc("Number of flights"))
-      .limit(100)
+      .limit(2) // set it to 2 for testing purpose
     top100FrequentFlyersDF
   }
 
@@ -130,6 +130,9 @@ object FlightsDataCalculation {
     // number of flights per month
     val flightsGroupeByMonthdDF = getGroupByMonth(flightsDF)
     flightsGroupeByMonthdDF.show()
+    println("flightsGroupeByMonthdDF Show")
+    flightsGroupeByMonthdDF.select("Month", "Number of flights")
+    .coalesce(1).write.format("csv").mode("overwrite").save("src/main/scala/output/flightsGroupeByMonthdDF")
 
     // join the df's using join function
     val combinedDF = flightsDF.join(passengersDF, usingColumn = "passengerId")
