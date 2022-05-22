@@ -119,20 +119,21 @@ object FlightsDataCalculation {
     // flights file
     val flightsCSV = "src/main/scala/Data/flightData.csv"
     val flightsDF = getCSVDF(flightsCSV, spark)
-    flightsDF.printSchema()
 
     // passengers file
     val passengersCSV = "src/main/scala/Data/passengers.csv"
     val passengersDF = getCSVDF(passengersCSV, spark)
-    passengersDF.printSchema()
 
     // flights calculation: 
     // number of flights per month
     val flightsGroupeByMonthdDF = getGroupByMonth(flightsDF)
     flightsGroupeByMonthdDF.show()
-    println("flightsGroupeByMonthdDF Show")
+
+    println("Saving flightsGroupeByMonthDF into csv file")
     flightsGroupeByMonthdDF.select("Month", "Number of flights")
-    .coalesce(1).write.format("csv").mode("overwrite").save("src/main/scala/output/flightsGroupeByMonthdDF")
+      .coalesce(1).write.format("csv").mode("overwrite")
+      .option("header", "true")
+      .save("src/main/scala/output/flightsGroupeByMonthdDF")
 
     // join the df's using join function
     val combinedDF = flightsDF.join(passengersDF, usingColumn = "passengerId")
@@ -144,16 +145,32 @@ object FlightsDataCalculation {
     val top100flyersDetailedDF = top100flyersDF.join(passengersDF, usingColumn = "passengerId")
     top100flyersDetailedDF.orderBy(desc("Number of flights")).show(101)
 
+    println("saving top100flyersDetailedDF into csv file")
+    top100flyersDetailedDF.select("passengerId", "Number of flights", "firstName","lastName")
+      .coalesce(1).write.format("csv").mode("overwrite")
+      .option("header", "true")
+      .save("src/main/scala/output/top100flyersDetailedDF")
+
     // Passengers with longest run
     val passengerLongestRunsDF = passengersLongestRun(flightsDF)
-    passengerLongestRunsDF.show()
+
+    println("Save passengersLongestRun into csv file")
+//    passengerLongestRunsDF.select("passengerId", "longest_run", "longestrunwithoutUK")
+//      .coalesce(1).write.format("csv").mode("overwrite")
+//      .save("src/main/scala/output/passengersLongestRun")
 
     // get passengers that have been in the flights together
     val passengersTogether = getPassengersTogether(flightsDF)
 
     // Passengers that have been in more than 3 flights together
     val passengersTogethergt3 = passengersTogether.where(col("flightsTogether") >= 3)
-    passengersTogethergt3.show()
+
+    println("saving passengersTogethergt3 into csv file")
+    passengersTogethergt3.select(col("df1.passengerId").as("passengerId_1"),
+      col("df2.passengerId").as("passengerId_2"), col("flightsTogether"))
+      .coalesce(1).write.format("csv").mode("overwrite")
+      .option("header", "true")
+      .save("src/main/scala/output/passengersTogethergteq3")
 
     // convert strings to date to filter it
     val passengersTogethercvdate = passengersTogether
@@ -171,7 +188,14 @@ object FlightsDataCalculation {
     // get the passengers who were in the same flights more than N times within given timeframe
     val passengersTogethergtn = flownTogether(passengersTogethercvdate, 4, from, to)
     println("parameterised passengers details")
-    passengersTogethergtn.show()
+
+    println("saving passengersTogethergtn into csv file")
+    passengersTogethergtn.select(col("df1.passengerId").as("passengerId_1"),
+      col("df2.passengerId").as("passengerId_2"), col("flightsTogether"),
+      col("from"), col("to"))
+      .coalesce(1).write.format("csv").mode("overwrite")
+      .option("header", "true")
+      .save("src/main/scala/output/passengersTogethergtn")
 
     // Stop spark session
     spark.stop()
