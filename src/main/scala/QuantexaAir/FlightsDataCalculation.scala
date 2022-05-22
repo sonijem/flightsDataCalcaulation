@@ -60,7 +60,7 @@ object FlightsDataCalculation {
     val top100FrequentFlyersDF = df.groupBy("passengerId")
       .agg(countDistinct("flightId").as("Number of flights"))
       .orderBy(desc("Number of flights"))
-      .limit(2) // set it to 2 for testing purpose
+      .limit(100) // set it to 2 for testing purpose
     top100FrequentFlyersDF
   }
 
@@ -147,6 +147,7 @@ object FlightsDataCalculation {
 
     println("saving top100flyersDetailedDF into csv file")
     top100flyersDetailedDF.select("passengerId", "Number of flights", "firstName","lastName")
+      .orderBy(desc("Number of flights"))
       .coalesce(1).write.format("csv").mode("overwrite")
       .option("header", "true")
       .save("src/main/scala/output/top100flyersDetailedDF")
@@ -155,9 +156,10 @@ object FlightsDataCalculation {
     val passengerLongestRunsDF = passengersLongestRun(flightsDF)
 
     println("Save passengersLongestRun into csv file")
-//    passengerLongestRunsDF.select("passengerId", "longest_run", "longestrunwithoutUK")
-//      .coalesce(1).write.format("csv").mode("overwrite")
-//      .save("src/main/scala/output/passengersLongestRun")
+    passengerLongestRunsDF.select("passengerId", "longest_run", "longestrunwithoutUK")
+      .orderBy(desc("longestrunwithoutUK"))
+      .coalesce(1).write.format("csv").mode("overwrite")
+      .save("src/main/scala/output/passengersLongestRun")
 
     // get passengers that have been in the flights together
     val passengersTogether = getPassengersTogether(flightsDF)
